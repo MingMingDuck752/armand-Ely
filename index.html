@@ -2,59 +2,109 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta armand="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- CHANGE THIS. It is the name on the browser tab, and it is what Google shows. -->
-  <title>Armand Ely </title>
-
-  <!-- CHANGE THIS TOO. One sentence. It is what shows under your link when someone shares it. -->
-  <meta name="description" content="i like to make games that are ispired by popular games like halo titan fall and dark souls and other stuff.">
-
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Armand Ely | Creative Developer</title>
+  <meta name="description"
+    content="Armand Ely is a creative developer exploring game design, Python, web apps, and modern UI design." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
+  <div class="page-shell">
+    <header class="topbar glass">
+      <div class="brand">
+        <span class="brand-mark">AE</span>
+        <span>Armand Ely</span>
+      </div>
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
 
-  <header>
-    <!-- Exactly ONE h1 on the page. It is your name. -->
-    <h1>armand</h1>
-    <p class="tagline">One line: "i like to make games and posibly apss or sites with code i learn from this this class".</p>
-  </header>
+    <main class="bento-grid">
+      <section class="card hero card-feature glass">
+        <div class="hero-copy">
+          <p class="eyebrow">Creative technologist</p>
+          <h1 data-welcome>Good day, I build worlds with code.</h1>
+          <p class="tagline">
+            I like making games, apps, and web experiences that blend design,
+            storytelling, and code into something memorable.
+          </p>
+          <div class="cta-row">
+            <a class="btn primary" href="#projects">View work</a>
+            <a class="btn secondary" href="#contact">Say hello</a>
+          </div>
+        </div>
+        <div class="orb orb-one"></div>
+        <div class="orb orb-two"></div>
+      </section>
 
-  <main>
+      <aside class="card glass stats-card">
+        <p class="label">Current focus</p>
+        <div class="stat-item">
+          <span class="stat" data-count="3" data-suffix="+">0</span>
+          <span class="stat-label">Languages & tools</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat" data-count="8" data-suffix="+">0</span>
+          <span class="stat-label">Creative ideas in motion</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat" data-count="24" data-suffix="/7">0</span>
+          <span class="stat-label">Curiosity mode</span>
+        </div>
+      </aside>
 
-    <section>
-      <h2>filling out all this stuff</h2>
-      <ul>
-        <li><strong>Something real.</strong> What it is, in one line.</li>
-        <li><strong>Something else.</strong> i made a on python playground inspired by halo odst</li>
-      </ul>
-    </section>
+      <section class="card glass about-card" id="about">
+        <p class="label">About me</p>
+        <p>
+          I’m learning how to build digital experiences with Python, JavaScript,
+          GitHub, and front-end design. I’m especially interested in making games
+          and interactive apps inspired by the atmosphere and energy of titles like
+          Halo, Destiny, and Dark Souls.
+        </p>
+      </section>
 
-    <section>
-      <h2>codeing,app design on here and python</h2>
-      <p>
-        Two or three sentences. Name the actual tools. "am learning how to make stuff with computers. Like with python and here in github.The skills ill learn from this class will help me make things i care about.
+      <section class="card glass projects-card" id="projects">
+        <p class="label">Projects</p>
+        <ul>
+          <li><strong>Python playground:</strong> a small interactive project inspired by first-person sci-fi gameplay.
+          </li>
+          <li><strong>Web design:</strong> building clean, responsive pages with modern visual systems.</li>
+          <li><strong>Game ideas:</strong> sketching mechanics and worlds that feel immersive and intentional.</li>
+        </ul>
+      </section>
 
-      </p>
-    </section>
+      <section class="card glass mood-card">
+        <p class="label">Vibe</p>
+        <div class="chip-row">
+          <span>Game dev</span>
+          <span>UI/UX</span>
+          <span>Python</span>
+          <span>Web</span>
+        </div>
+      </section>
 
-    <section>
-      <h2>Get in touch</h2>
-      <!--
-        Put an email you will still control after graduation. If you only have the school one
-        today, that is fine — put it in, and change it later. That is what commits are for.
-      -->
-      <p><a href="mailto:ae75016@stu.alaschool.org">ae75016@stu.alaschools.com</a></p>
-    </section>
+      <section class="card glass contact-card" id="contact">
+        <p class="label">Contact</p>
+        <a href="mailto:ae75016@stu.alaschool.org">ae75016@stu.alaschool.org</a>
+        <p class="tiny-note">Always open to new ideas, feedback, and collaborations.</p>
+      </section>
+    </main>
 
-  </main>
+    <footer class="footer glass">
+      <p>Built by hand · Updated September 2026</p>
+    </footer>
+  </div>
 
-  <footer>
-    <p>Built by hand. Last updated <!-- change this when you change the page --> August 2026.</p>
-  </footer>
-
+  <script src="app.js"></script>
 </body>
 
 </html>
