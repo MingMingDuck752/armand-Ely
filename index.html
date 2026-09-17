@@ -4,106 +4,68 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Armand Ely | Creative Developer</title>
-  <meta name="description"
-    content="Armand Ely is a creative developer exploring game design, Python, web apps, and modern UI design." />
+  <title>UNSC // Paris-class patrol</title>
+  <meta name="description" content="Pilot a pixel-art Paris-class frigate through a dangerous sector of deep space." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <div class="page-shell">
-    <header class="topbar glass">
-      <div class="brand">
-        <span class="brand-mark">AE</span>
-        <span>Armand Ely</span>
-      </div>
-      <nav class="nav">
-        <a href="#about">About</a>
-        <a href="#projects">Projects</a>
-        <a href="#contact">Contact</a>
-      </nav>
+  <main class="command-screen">
+    <header class="command-bar">
+      <div class="identity"><span class="unsc-mark">UNSC</span><span class="divider"></span><span>FLEETCOM / OUTER
+          COLONIES</span></div>
+      <div class="signal"><span class="signal-dot"></span> LIVE LINK <span class="signal-value">07:42:18</span></div>
     </header>
-
-    <main class="bento-grid">
-      <section class="card hero card-feature glass">
-        <div class="hero-copy">
-          <p class="eyebrow">Creative technologist</p>
-          <h1 data-welcome>Good day, I build worlds with code.</h1>
-          <p class="tagline">
-            I like making games, apps, and web experiences that blend design,
-            storytelling, and code into something memorable.
-          </p>
-          <div class="cta-row">
-            <a class="btn primary" href="#projects">View work</a>
-            <a class="btn secondary" href="#contact">Say hello</a>
-          </div>
+    <section class="briefing">
+      <div>
+        <p class="kicker">TACTICAL SIMULATION // 07</p>
+        <h1>PARIS-CLASS <em>FRIGATE</em></h1>
+        <p class="subhead">A lonely patrol through the Epsilon Eridani debris belt.</p>
+      </div>
+      <div class="mission-readout"><span>MISSION</span><strong>HOLD THE LINE</strong><small>SECTOR 04 · HOSTILES:
+          NONE</small></div>
+    </section>
+    <section class="game-layout">
+      <div class="viewport-frame">
+        <div class="viewport-label"><span>CAM 01 // DEEP SPACE</span><span>REC <i></i></span></div>
+        <canvas id="gameCanvas" width="960" height="600" aria-label="Top-down space flight game"></canvas>
+        <div class="scanline"></div>
+        <div class="crosshair crosshair-top"></div>
+        <div class="crosshair crosshair-bottom"></div>
+      </div>
+      <aside class="telemetry">
+        <div class="panel-title">VESSEL TELEMETRY <span>ONLINE</span></div>
+        <div class="ship-name"><strong>UNSC FFG-142</strong><span>PARIS-CLASS</span></div>
+        <div class="readout-grid">
+          <div><span>HEADING</span><strong id="headingReadout">000°</strong></div>
+          <div><span>VELOCITY</span><strong id="speedReadout">000</strong></div>
+          <div><span>HULL</span><strong class="green">100%</strong></div>
+          <div><span>SHIELDS</span><strong class="amber">84%</strong></div>
         </div>
-        <div class="orb orb-one"></div>
-        <div class="orb orb-two"></div>
-      </section>
-
-      <aside class="card glass stats-card">
-        <p class="label">Current focus</p>
-        <div class="stat-item">
-          <span class="stat" data-count="3" data-suffix="+">0</span>
-          <span class="stat-label">Languages & tools</span>
+        <div class="bar-group"><label>HULL INTEGRITY <b>100</b></label>
+          <div class="bar"><i class="hull-bar"></i></div>
         </div>
-        <div class="stat-item">
-          <span class="stat" data-count="8" data-suffix="+">0</span>
-          <span class="stat-label">Creative ideas in motion</span>
+        <div class="bar-group"><label>REACTOR OUTPUT <b id="reactorValue">62</b></label>
+          <div class="bar amber-bar"><i id="reactorBar"></i></div>
         </div>
-        <div class="stat-item">
-          <span class="stat" data-count="24" data-suffix="/7">0</span>
-          <span class="stat-label">Curiosity mode</span>
+        <div class="controls">
+          <div class="panel-title">FLIGHT CONTROL</div>
+          <p><kbd>W</kbd><span>FORWARD</span><kbd>S</kbd><span>SLOW REVERSE</span></p>
+          <p><kbd>A</kbd><kbd>D</kbd><span>ROTATE HEADING</span></p>
+          <p><kbd>Q</kbd><kbd>E</kbd><span>STRAFE</span></p>
+          <p><kbd>R</kbd><span>RESET FLIGHT VECTOR</span></p>
         </div>
+        <div class="status-line"><span class="status-pulse"></span> FLIGHT SYSTEMS NOMINAL</div>
       </aside>
-
-      <section class="card glass about-card" id="about">
-        <p class="label">About me</p>
-        <p>
-          I’m learning how to build digital experiences with Python, JavaScript,
-          GitHub, and front-end design. I’m especially interested in making games
-          and interactive apps inspired by the atmosphere and energy of titles like
-          Halo, Destiny, and Dark Souls.
-        </p>
-      </section>
-
-      <section class="card glass projects-card" id="projects">
-        <p class="label">Projects</p>
-        <ul>
-          <li><strong>Python playground:</strong> a small interactive project inspired by first-person sci-fi gameplay.
-          </li>
-          <li><strong>Web design:</strong> building clean, responsive pages with modern visual systems.</li>
-          <li><strong>Game ideas:</strong> sketching mechanics and worlds that feel immersive and intentional.</li>
-        </ul>
-      </section>
-
-      <section class="card glass mood-card">
-        <p class="label">Vibe</p>
-        <div class="chip-row">
-          <span>Game dev</span>
-          <span>UI/UX</span>
-          <span>Python</span>
-          <span>Web</span>
-        </div>
-      </section>
-
-      <section class="card glass contact-card" id="contact">
-        <p class="label">Contact</p>
-        <a href="mailto:ae75016@stu.alaschool.org">ae75016@stu.alaschool.org</a>
-        <p class="tiny-note">Always open to new ideas, feedback, and collaborations.</p>
-      </section>
-    </main>
-
-    <footer class="footer glass">
-      <p>Built by hand · Updated September 2026</p>
-    </footer>
-  </div>
-
+    </section>
+    <footer class="footer-bar"><span>WASD / ARROW KEYS TO PILOT</span><span>HOLD A OR D TO TURN</span><span>NO
+        AUTOMATION // YOU HAVE THE CONN</span></footer>
+  </main>
   <script src="app.js"></script>
 </body>
 
