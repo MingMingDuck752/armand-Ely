@@ -30,7 +30,7 @@
       </div>
       <div class="mission-readout"><span>MISSION</span><strong>HOLD THE LINE</strong><small>SECTOR <b
             id="missionSectorReadout">CAIRO STATION</b> · HOSTILES:
-          NONE</small></div>
+          <span id="hostileReadout">NONE</span></small></div>
     </section>
     <section class="game-layout">
       <div class="viewport-frame">
@@ -51,9 +51,9 @@
         </div>
         <div class="system-grid">
           <div><span>SECTOR</span><strong id="sectorReadout">CAIRO STATION</strong></div>
-          <div><span>THREAT</span><strong class="amber">LOW</strong></div>
+          <div><span>THREAT</span><strong class="amber" id="threatReadout">LOW</strong></div>
           <div><span>DRIFT</span><strong id="driftReadout">00.4</strong></div>
-          <div><span>LOCK</span><strong class="green">STABLE</strong></div>
+          <div><span>LOCK</span><strong class="green" id="lockReadout">DOCKED</strong></div>
         </div>
         <div class="bar-group"><label>HULL INTEGRITY <b>100</b></label>
           <div class="bar"><i class="hull-bar"></i></div>
@@ -71,7 +71,7 @@
         <div class="status-line"><span class="status-pulse"></span> FLIGHT SYSTEMS NOMINAL</div>
       </aside>
     </section>
-    <footer class="footer-bar"><span>WASD / ARROW KEYS TO PILOT</span><span>HOLD A OR D TO TURN</span><span>NO
+    <footer class="footer-bar"><span>WASD / ARROW KEYS TO PILOT</span><span>W TO EXIT DOCK</span><span>NO
         AUTOMATION // YOU HAVE THE CONN</span></footer>
   </main>
   <script src="app.js"></script>

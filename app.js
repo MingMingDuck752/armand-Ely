@@ -10,10 +10,24 @@ const WORLD_WIDTH = 2200;
 const WORLD_HEIGHT = 1400;
 const STATION_X = 1180;
 const STATION_Y = 650;
+const stationCollisionRects = [
+  { x: -250, y: -120, width: 500, height: 240 },
+  { x: -365, y: -125, width: 35, height: 70 },
+  { x: -365, y: 55, width: 35, height: 70 },
+  { x: 330, y: -125, width: 35, height: 250 },
+  { x: -290, y: -30, width: 40, height: 60 },
+  { x: 250, y: -30, width: 40, height: 60 },
+  { x: -110, y: 200, width: 220, height: 60 },
+  { x: -110, y: -260, width: 220, height: 60 },
+];
+const explosions = [];
 const camera = { x: 0, y: 0 };
 const headingReadout = document.querySelector('#headingReadout');
 const speedReadout = document.querySelector('#speedReadout');
 const driftReadout = document.querySelector('#driftReadout');
+const lockReadout = document.querySelector('#lockReadout');
+const hostileReadout = document.querySelector('#hostileReadout');
+const threatReadout = document.querySelector('#threatReadout');
 const reactorBar = document.querySelector('#reactorBar');
 const reactorValue = document.querySelector('#reactorValue');
 const sectorReadout = document.querySelector('#sectorReadout');
@@ -27,12 +41,28 @@ const stars = Array.from({ length: 520 }, (_, index) => ({
 }));
 const ship = {
   x: STATION_X - 360,
-  y: STATION_Y + 10,
-  angle: 0,
+  y: STATION_Y,
+  angle: Math.PI,
   speed: 0,
   strafe: 0,
   scale: 0.42,
-  hitRadius: 63,
+  hitRadius: 45,
+  docked: true,
+};
+const covenantCruiser = {
+  active: false,
+  spawned: false,
+  x: 1660,
+  y: 520,
+  angle: Math.PI,
+  speed: 42,
+  hp: 100,
+  maxHp: 100,
+  hitRadius: 60,
+  missileDamage: 1,
+  waypointX: 1660,
+  waypointY: 520,
+  waypointTimer: 0,
 };
 let lastFrame = performance.now();
 let elapsed = 0;
@@ -42,9 +72,31 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const normalizeAngle = (angle) => (angle + Math.PI * 2) % (Math.PI * 2);
 const pressed = (...names) => names.some((name) => keys.has(name));
 
+function collidesWithCairoStation(x, y, radius = ship.hitRadius) {
+  const localX = x - STATION_X;
+  const localY = y - STATION_Y;
+
+  return stationCollisionRects.some((rect) => {
+    const closestX = clamp(localX, rect.x, rect.x + rect.width);
+    const closestY = clamp(localY, rect.y, rect.y + rect.height);
+    return Math.hypot(localX - closestX, localY - closestY) < radius;
+  });
+}
+
+function moveShip(nextX, nextY) {
+  const canMoveX = !collidesWithCairoStation(nextX, ship.y);
+  const canMoveY = !collidesWithCairoStation(ship.x, nextY);
+
+  if (canMoveX) ship.x = nextX;
+  if (canMoveY) ship.y = nextY;
+  if (!canMoveX || !canMoveY) ship.speed = 0;
+
+  ship.docked = ship.x > STATION_X - 425 && ship.x < STATION_X - 250 && Math.abs(ship.y - STATION_Y) < 48;
+}
+
 function getCurrentSector() {
   const stationDistance = Math.hypot(ship.x - STATION_X, ship.y - STATION_Y);
-  if (stationDistance < 360) return 'CAIRO STATION';
+  if (ship.docked || stationDistance < 460) return 'CAIRO STATION';
   if (ship.x < WORLD_WIDTH * 0.36) return 'DEBRIS RING';
   if (ship.x < WORLD_WIDTH * 0.72) return 'ION CHANNEL';
   return 'VOID GATE';
@@ -71,7 +123,80 @@ function fireMissileAtTarget() {
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     radius: 4,
+    damage: 10,
   });
+}
+
+function chooseCruiserWaypoint() {
+  let waypointX = covenantCruiser.x;
+  let waypointY = covenantCruiser.y;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    waypointX = clamp(covenantCruiser.x + (Math.random() - 0.5) * 600, 700, WORLD_WIDTH - 120);
+    waypointY = clamp(covenantCruiser.y + (Math.random() - 0.5) * 500, 120, WORLD_HEIGHT - 120);
+    if (!collidesWithCairoStation(waypointX, waypointY, covenantCruiser.hitRadius)) break;
+  }
+  covenantCruiser.waypointX = waypointX;
+  covenantCruiser.waypointY = waypointY;
+  covenantCruiser.waypointTimer = 3 + Math.random() * 3;
+}
+
+function spawnExplosion(x, y) {
+  explosions.push({ x, y, age: 0, duration: 1.2 });
+}
+
+function updateCovenantCruiser(delta) {
+  if (!covenantCruiser.active) {
+    if (!covenantCruiser.spawned && elapsed >= 15) {
+      covenantCruiser.spawned = true;
+      covenantCruiser.active = true;
+      chooseCruiserWaypoint();
+    }
+    return;
+  }
+
+  covenantCruiser.waypointTimer -= delta;
+  const dx = covenantCruiser.waypointX - covenantCruiser.x;
+  const dy = covenantCruiser.waypointY - covenantCruiser.y;
+  if (covenantCruiser.waypointTimer <= 0 || Math.hypot(dx, dy) < 50) chooseCruiserWaypoint();
+
+  const targetAngle = Math.atan2(dy, dx);
+  let turn = targetAngle - covenantCruiser.angle;
+  while (turn > Math.PI) turn -= Math.PI * 2;
+  while (turn < -Math.PI) turn += Math.PI * 2;
+  covenantCruiser.angle += clamp(turn, -1, 1) * delta * 0.8;
+  const thrustDirection = Math.abs(turn) <= Math.PI / 2 ? 1 : -1;
+  const travelAngle = covenantCruiser.angle + (thrustDirection < 0 ? Math.PI : 0);
+  const nextX = clamp(covenantCruiser.x + Math.cos(travelAngle) * covenantCruiser.speed * delta, 120, WORLD_WIDTH - 120);
+  const nextY = clamp(covenantCruiser.y + Math.sin(travelAngle) * covenantCruiser.speed * delta, 120, WORLD_HEIGHT - 120);
+  const canMoveX = !collidesWithCairoStation(nextX, covenantCruiser.y, covenantCruiser.hitRadius);
+  const canMoveY = !collidesWithCairoStation(covenantCruiser.x, nextY, covenantCruiser.hitRadius);
+  if (canMoveX) covenantCruiser.x = nextX;
+  if (canMoveY) covenantCruiser.y = nextY;
+  if (!canMoveX || !canMoveY) chooseCruiserWaypoint();
+}
+
+function checkCovenantCruiserHits() {
+  if (!covenantCruiser.active) return;
+
+  for (let index = missiles.length - 1; index >= 0; index -= 1) {
+    const missile = missiles[index];
+    if (Math.hypot(missile.x - covenantCruiser.x, missile.y - covenantCruiser.y) > covenantCruiser.hitRadius + missile.radius) continue;
+
+    covenantCruiser.hp = Math.max(0, covenantCruiser.hp - missile.damage);
+    missiles.splice(index, 1);
+    if (covenantCruiser.hp === 0) {
+      covenantCruiser.active = false;
+      spawnExplosion(covenantCruiser.x, covenantCruiser.y);
+      break;
+    }
+  }
+}
+
+function updateExplosions(delta) {
+  for (let index = explosions.length - 1; index >= 0; index -= 1) {
+    explosions[index].age += delta;
+    if (explosions[index].age >= explosions[index].duration) explosions.splice(index, 1);
+  }
 }
 
 canvas.addEventListener('mousemove', (event) => {
@@ -122,10 +247,10 @@ function update(delta) {
   if (pressed('r')) { ship.speed = 0; ship.strafe = 0; ship.angle = -Math.PI / 2; }
   ship.angle += turn * delta * 2.4;
   ship.speed = thrust ? 150 : reverse ? -38 : 0;
-  ship.x += Math.cos(ship.angle) * ship.speed * delta;
-  ship.y += Math.sin(ship.angle) * ship.speed * delta;
-  ship.x = clamp(ship.x, 40, WORLD_WIDTH - 40);
-  ship.y = clamp(ship.y, 40, WORLD_HEIGHT - 40);
+  const nextX = clamp(ship.x + Math.cos(ship.angle) * ship.speed * delta, 40, WORLD_WIDTH - 40);
+  const nextY = clamp(ship.y + Math.sin(ship.angle) * ship.speed * delta, 40, WORLD_HEIGHT - 40);
+  moveShip(nextX, nextY);
+  updateCovenantCruiser(delta);
 
   for (let index = missiles.length - 1; index >= 0; index -= 1) {
     const missile = missiles[index];
@@ -136,6 +261,9 @@ function update(delta) {
       missiles.splice(index, 1);
     }
   }
+
+  checkCovenantCruiserHits();
+  updateExplosions(delta);
 
   updateCamera();
 }
@@ -345,6 +473,90 @@ function drawMissiles() {
   });
   context.restore();
 }
+function drawCovenantCruiser() {
+  if (!covenantCruiser.active) return;
+
+  const screenX = covenantCruiser.x - camera.x;
+  const screenY = covenantCruiser.y - camera.y;
+  context.save();
+  context.translate(screenX, screenY);
+  context.rotate(covenantCruiser.angle + Math.PI / 2);
+  context.scale(0.42, 0.42);
+  const pixel = (color, x, y, width, height) => { context.fillStyle = color; context.fillRect(x, y, width, height); };
+
+  context.shadowColor = 'rgba(170, 72, 221, .55)';
+  context.shadowBlur = 18;
+  context.fillStyle = '#211331';
+  context.beginPath();
+  context.moveTo(0, -178);
+  context.lineTo(22, -148);
+  context.lineTo(31, -83);
+  context.lineTo(61, -28);
+  context.lineTo(54, 30);
+  context.lineTo(35, 86);
+  context.lineTo(25, 151);
+  context.lineTo(0, 176);
+  context.lineTo(-25, 151);
+  context.lineTo(-35, 86);
+  context.lineTo(-54, 30);
+  context.lineTo(-61, -28);
+  context.lineTo(-31, -83);
+  context.lineTo(-22, -148);
+  context.closePath();
+  context.fill();
+  context.shadowBlur = 0;
+
+  pixel('#3d1f54', -18, -155, 36, 70);
+  pixel('#57256f', -25, -98, 50, 118);
+  pixel('#743480', -31, -24, 62, 90);
+  pixel('#9f4eb0', -37, -8, 74, 39);
+  pixel('#532560', -25, 36, 50, 66);
+  pixel('#2c183e', -21, 92, 42, 72);
+  pixel('#4b2060', -14, 130, 28, 39);
+  pixel('#a95bc0', -7, -164, 14, 48);
+  pixel('#b860c8', -8, -71, 16, 26);
+  pixel('#c873d2', -26, -2, 52, 10);
+  pixel('#bd6dce', -23, 9, 46, 8);
+  pixel('#1a1329', -38, -51, 10, 74);
+  pixel('#1a1329', 28, -51, 10, 74);
+  pixel('#d394d5', -4, -143, 8, 19);
+  pixel('#d394d5', -4, 113, 8, 29);
+  pixel('#dfb3d9', -5, -118, 10, 8);
+  pixel('#ddafd9', -4, 17, 8, 8);
+  pixel('#d59adb', -42, -6, 8, 18);
+  pixel('#d59adb', 34, -6, 8, 18);
+  pixel('#53d9ea', -4, -151, 8, 7);
+  pixel('#53d9ea', -4, -42, 8, 7);
+  pixel('#53d9ea', -4, 67, 8, 7);
+  context.restore();
+
+  context.fillStyle = 'rgba(10, 12, 20, .85)';
+  context.fillRect(screenX - 52, screenY - 55, 104, 6);
+  context.fillStyle = '#c56d76';
+  context.fillRect(screenX - 51, screenY - 54, 102 * (covenantCruiser.hp / covenantCruiser.maxHp), 4);
+  context.fillStyle = '#d8b69a';
+  context.font = '10px Share Tech Mono, monospace';
+  context.textAlign = 'center';
+  context.fillText('CSS COVENANT CRUISER', screenX, screenY - 64);
+}
+function drawExplosions() {
+  explosions.forEach((explosion) => {
+    const progress = explosion.age / explosion.duration;
+    const radius = 16 + progress * 82;
+    const screenX = explosion.x - camera.x;
+    const screenY = explosion.y - camera.y;
+    context.save();
+    context.globalAlpha = 1 - progress;
+    context.strokeStyle = '#e8b27f';
+    context.lineWidth = 7 - progress * 5;
+    context.beginPath();
+    context.arc(screenX, screenY, radius, 0, Math.PI * 2);
+    context.stroke();
+    context.fillStyle = '#f2d09a';
+    context.fillRect(screenX - 5, screenY - 5, 10, 10);
+    context.restore();
+  });
+}
 function drawShip() {
   const shipScreenX = ship.x - camera.x;
   const shipScreenY = ship.y - camera.y;
@@ -399,8 +611,10 @@ function render() {
   drawBackground();
   const sector = getCurrentSector();
   drawCairoStation();
+  drawCovenantCruiser();
   drawAim();
   drawMissiles();
+  drawExplosions();
   drawShip();
 
   const heading = Math.round(normalizeAngle(ship.angle) * 180 / Math.PI);
@@ -411,10 +625,17 @@ function render() {
   headingReadout.textContent = `${String(heading).padStart(3, '0')}°`;
   speedReadout.textContent = String(speed).padStart(3, '0');
   driftReadout.textContent = drift;
+  lockReadout.textContent = ship.docked ? 'DOCKED' : 'CLEAR';
   reactorBar.style.width = `${reactor}%`;
   reactorValue.textContent = reactor;
   sectorReadout.textContent = sector;
   missionSectorReadout.textContent = sector;
+  hostileReadout.textContent = covenantCruiser.active
+    ? 'CSS CRUISER'
+    : covenantCruiser.spawned
+      ? 'DESTROYED'
+      : `INBOUND ${Math.ceil(Math.max(0, 15 - elapsed))}S`;
+  threatReadout.textContent = covenantCruiser.active ? 'MEDIUM' : 'LOW';
 }
 function frame(now) { const delta = Math.min((now - lastFrame) / 1000, 0.05); lastFrame = now; elapsed += delta; update(delta); render(); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
