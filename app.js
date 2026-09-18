@@ -8,12 +8,16 @@ const missiles = [];
 const burstState = { active: false, shotsLeft: 0, timer: 0 };
 const WORLD_WIDTH = 2200;
 const WORLD_HEIGHT = 1400;
+const STATION_X = 1200;
+const STATION_Y = 700;
 const camera = { x: 0, y: 0 };
 const headingReadout = document.querySelector('#headingReadout');
 const speedReadout = document.querySelector('#speedReadout');
 const driftReadout = document.querySelector('#driftReadout');
 const reactorBar = document.querySelector('#reactorBar');
 const reactorValue = document.querySelector('#reactorValue');
+const sectorReadout = document.querySelector('#sectorReadout');
+const missionSectorReadout = document.querySelector('#missionSectorReadout');
 const stars = Array.from({ length: 520 }, (_, index) => ({
   x: (index * 191) % WORLD_WIDTH,
   y: (index * 97) % WORLD_HEIGHT,
@@ -22,8 +26,8 @@ const stars = Array.from({ length: 520 }, (_, index) => ({
   layer: index % 3,
 }));
 const ship = {
-  x: WORLD_WIDTH / 2,
-  y: WORLD_HEIGHT / 2,
+  x: 940,
+  y: STATION_Y,
   angle: -Math.PI / 2,
   speed: 0,
   strafe: 0,
@@ -39,6 +43,8 @@ const normalizeAngle = (angle) => (angle + Math.PI * 2) % (Math.PI * 2);
 const pressed = (...names) => names.some((name) => keys.has(name));
 
 function getCurrentSector() {
+  const stationDistance = Math.hypot(ship.x - STATION_X, ship.y - STATION_Y);
+  if (stationDistance < 360) return 'CAIRO STATION';
   if (ship.x < WORLD_WIDTH * 0.36) return 'DEBRIS RING';
   if (ship.x < WORLD_WIDTH * 0.72) return 'ION CHANNEL';
   return 'VOID GATE';
@@ -136,7 +142,9 @@ function update(delta) {
 
 function drawBackground() {
   const sector = getCurrentSector();
-  const palette = sector === 'DEBRIS RING'
+  const palette = sector === 'CAIRO STATION'
+    ? { base: '#071018', glowA: 'rgba(37, 98, 125, .3)', glowB: 'rgba(104, 74, 118, .2)', accent: '180, 224, 229', accentAlt: '222, 190, 125' }
+    : sector === 'DEBRIS RING'
     ? { base: '#030a12', glowA: 'rgba(20, 87, 112, .34)', glowB: 'rgba(52, 43, 92, .18)', accent: '184, 220, 235', accentAlt: '218, 227, 201' }
     : sector === 'ION CHANNEL'
       ? { base: '#081319', glowA: 'rgba(31, 103, 147, .32)', glowB: 'rgba(91, 66, 142, .24)', accent: '152, 209, 255', accentAlt: '203, 165, 255' }
@@ -182,17 +190,40 @@ function drawBackground() {
     }
   }
 }
-function drawPlanet() {
-  const planetX = 795 - camera.x;
-  const planetY = 460 - camera.y;
+function drawCairoStation() {
+  const stationX = STATION_X - camera.x;
+  const stationY = STATION_Y - camera.y;
   context.save();
-  context.translate(planetX, planetY);
-  context.fillStyle = 'rgba(11, 42, 55, .65)';
-  context.beginPath(); context.arc(0, 0, 100, 0, Math.PI * 2); context.fill();
-  context.strokeStyle = 'rgba(79, 176, 180, .22)';
-  context.lineWidth = 3; context.beginPath(); context.ellipse(0, 0, 150, 27, -0.18, 0, Math.PI * 2); context.stroke();
-  context.fillStyle = '#184252'; context.beginPath(); context.arc(-25, -20, 70, 0, Math.PI * 2); context.fill();
-  context.fillStyle = 'rgba(117, 209, 193, .14)'; context.fillRect(-45, -35, 35, 9); context.fillRect(15, 18, 50, 7); context.restore();
+  context.translate(stationX, stationY);
+  context.fillStyle = 'rgba(44, 127, 157, .1)';
+  context.beginPath(); context.arc(0, 0, 345, 0, Math.PI * 2); context.fill();
+  context.strokeStyle = 'rgba(128, 202, 205, .18)';
+  context.lineWidth = 26;
+  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
+  context.strokeStyle = '#263c43';
+  context.lineWidth = 18;
+  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
+  context.strokeStyle = '#5a7778';
+  context.lineWidth = 2;
+  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
+  context.strokeStyle = '#405b60';
+  context.lineWidth = 7;
+  for (let index = 0; index < 8; index += 1) {
+    const angle = index * Math.PI / 4;
+    context.beginPath(); context.moveTo(0, 0); context.lineTo(Math.cos(angle) * 260, Math.sin(angle) * 98); context.stroke();
+  }
+  context.fillStyle = '#172a31'; context.fillRect(-68, -42, 136, 84);
+  context.fillStyle = '#314c51'; context.fillRect(-45, -28, 90, 56);
+  context.fillStyle = '#8cc8c0'; context.fillRect(-8, -19, 16, 38);
+  context.fillStyle = '#d8c28d'; context.fillRect(-31, -5, 11, 10); context.fillRect(20, -5, 11, 10);
+  context.strokeStyle = '#6e8e8c';
+  context.lineWidth = 10;
+  context.beginPath(); context.moveTo(-130, 0); context.lineTo(-210, 0); context.moveTo(130, 0); context.lineTo(210, 0); context.stroke();
+  context.fillStyle = '#a6d8c6';
+  for (let index = -2; index <= 2; index += 1) {
+    context.fillRect(index * 74 - 3, -103, 6, 8); context.fillRect(index * 74 - 3, 95, 6, 8);
+  }
+  context.restore();
 }
 function drawAim() {
   const shipScreenX = ship.x - camera.x;
@@ -299,7 +330,8 @@ function drawShip() {
 }
 function render() {
   drawBackground();
-  drawPlanet();
+  const sector = getCurrentSector();
+  drawCairoStation();
   drawAim();
   drawMissiles();
   drawShip();
@@ -314,6 +346,8 @@ function render() {
   driftReadout.textContent = drift;
   reactorBar.style.width = `${reactor}%`;
   reactorValue.textContent = reactor;
+  sectorReadout.textContent = sector;
+  missionSectorReadout.textContent = sector;
 }
 function frame(now) { const delta = Math.min((now - lastFrame) / 1000, 0.05); lastFrame = now; elapsed += delta; update(delta); render(); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
