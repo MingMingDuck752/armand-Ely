@@ -8,8 +8,8 @@ const missiles = [];
 const burstState = { active: false, shotsLeft: 0, timer: 0 };
 const WORLD_WIDTH = 2200;
 const WORLD_HEIGHT = 1400;
-const STATION_X = 1200;
-const STATION_Y = 700;
+const STATION_X = 1180;
+const STATION_Y = 650;
 const camera = { x: 0, y: 0 };
 const headingReadout = document.querySelector('#headingReadout');
 const speedReadout = document.querySelector('#speedReadout');
@@ -26,12 +26,12 @@ const stars = Array.from({ length: 520 }, (_, index) => ({
   layer: index % 3,
 }));
 const ship = {
-  x: 940,
-  y: STATION_Y,
-  angle: -Math.PI / 2,
+  x: STATION_X - 360,
+  y: STATION_Y + 10,
+  angle: 0,
   speed: 0,
   strafe: 0,
-  scale: 0.45,
+  scale: 0.42,
   hitRadius: 63,
 };
 let lastFrame = performance.now();
@@ -193,36 +193,103 @@ function drawBackground() {
 function drawCairoStation() {
   const stationX = STATION_X - camera.x;
   const stationY = STATION_Y - camera.y;
+
   context.save();
   context.translate(stationX, stationY);
-  context.fillStyle = 'rgba(44, 127, 157, .1)';
-  context.beginPath(); context.arc(0, 0, 345, 0, Math.PI * 2); context.fill();
-  context.strokeStyle = 'rgba(128, 202, 205, .18)';
-  context.lineWidth = 26;
-  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
-  context.strokeStyle = '#263c43';
-  context.lineWidth = 18;
-  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
-  context.strokeStyle = '#5a7778';
+
+  const drawBlock = (x, y, w, h, color, stroke = '#16272d') => {
+    context.fillStyle = color;
+    context.fillRect(x, y, w, h);
+    context.strokeStyle = stroke;
+    context.lineWidth = 2;
+    context.strokeRect(x, y, w, h);
+  };
+
+  context.fillStyle = 'rgba(120, 157, 175, 0.12)';
+  context.beginPath();
+  context.ellipse(0, 0, 370, 170, 0, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = '#202f38';
+  context.fillRect(-250, -120, 500, 240);
+
+  context.fillStyle = '#283d47';
+  context.fillRect(-220, -90, 440, 180);
+
+  context.strokeStyle = '#96aeb3';
   context.lineWidth = 2;
-  context.beginPath(); context.ellipse(0, 0, 285, 112, -0.08, 0, Math.PI * 2); context.stroke();
-  context.strokeStyle = '#405b60';
-  context.lineWidth = 7;
-  for (let index = 0; index < 8; index += 1) {
-    const angle = index * Math.PI / 4;
-    context.beginPath(); context.moveTo(0, 0); context.lineTo(Math.cos(angle) * 260, Math.sin(angle) * 98); context.stroke();
+  context.strokeRect(-220, -90, 440, 180);
+
+  context.fillStyle = '#101c22';
+  context.fillRect(-40, -170, 80, 290);
+  context.fillRect(-290, -30, 580, 60);
+  context.fillRect(-110, -210, 220, 50);
+
+  context.fillStyle = '#405a62';
+  context.fillRect(-185, -55, 370, 110);
+  context.fillRect(-140, -145, 280, 40);
+
+  context.fillStyle = '#8ea4a7';
+  context.fillRect(-175, -45, 350, 18);
+  context.fillRect(-175, 35, 350, 18);
+
+  context.fillStyle = '#d5d7d2';
+  context.fillRect(-160, -20, 320, 40);
+
+  for (let index = -3; index <= 3; index += 1) {
+    const px = index * 88;
+    context.fillStyle = '#a7b6a8';
+    context.fillRect(px - 8, -110, 16, 22);
+    context.fillRect(px - 8, 88, 16, 22);
+    context.fillStyle = '#d7e1d8';
+    context.fillRect(px - 2, -104, 4, 10);
+    context.fillRect(px - 2, 94, 4, 10);
   }
-  context.fillStyle = '#172a31'; context.fillRect(-68, -42, 136, 84);
-  context.fillStyle = '#314c51'; context.fillRect(-45, -28, 90, 56);
-  context.fillStyle = '#8cc8c0'; context.fillRect(-8, -19, 16, 38);
-  context.fillStyle = '#d8c28d'; context.fillRect(-31, -5, 11, 10); context.fillRect(20, -5, 11, 10);
-  context.strokeStyle = '#6e8e8c';
-  context.lineWidth = 10;
-  context.beginPath(); context.moveTo(-130, 0); context.lineTo(-210, 0); context.moveTo(130, 0); context.lineTo(210, 0); context.stroke();
-  context.fillStyle = '#a6d8c6';
-  for (let index = -2; index <= 2; index += 1) {
-    context.fillRect(index * 74 - 3, -103, 6, 8); context.fillRect(index * 74 - 3, 95, 6, 8);
+
+  drawBlock(-335, -75, 70, 150, '#1a2a32');
+  drawBlock(265, -75, 70, 150, '#1a2a32');
+  drawBlock(-365, -125, 35, 250, '#2b3f49');
+  drawBlock(330, -125, 35, 250, '#2b3f49');
+
+  context.fillStyle = '#0e1a20';
+  for (let index = 0; index < 5; index += 1) {
+    const x = -170 + index * 85;
+    context.fillRect(x, -190, 40, 20);
+    context.fillRect(x, 170, 40, 20);
   }
+
+  context.fillStyle = '#d7bf7d';
+  context.fillRect(-32, -150, 12, 44);
+  context.fillRect(20, -150, 12, 44);
+  context.fillRect(-32, 106, 12, 44);
+  context.fillRect(20, 106, 12, 44);
+
+  context.fillStyle = '#93c4c8';
+  context.fillRect(-275, -5, 26, 10);
+  context.fillRect(249, -5, 26, 10);
+
+  context.fillStyle = '#0d161a';
+  context.fillRect(-405, -5, 70, 10);
+  context.fillRect(335, -5, 70, 10);
+  context.fillRect(-8, -260, 16, 120);
+
+  context.strokeStyle = '#758d90';
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(-325, 0);
+  context.lineTo(-420, 0);
+  context.moveTo(325, 0);
+  context.lineTo(420, 0);
+  context.stroke();
+
+  context.fillStyle = '#121d21';
+  context.fillRect(-95, -260, 190, 60);
+  context.fillRect(-110, 200, 220, 60);
+
+  context.fillStyle = '#2f4348';
+  context.fillRect(-75, -245, 150, 28);
+  context.fillRect(-75, 217, 150, 28);
+
   context.restore();
 }
 function drawAim() {
