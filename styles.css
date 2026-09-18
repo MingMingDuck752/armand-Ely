@@ -263,21 +263,36 @@ canvas {
   letter-spacing: .16em;
 }
 
-.readout-grid {
+.readout-grid,
+.system-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 19px 10px;
+}
+
+.readout-grid {
   padding: 21px 0;
 }
 
-.readout-grid div {
+.system-grid {
+  padding: 0 0 21px;
+  border-bottom: 1px solid var(--line);
+}
+
+.readout-grid div,
+.system-grid div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.readout-grid strong {
+.readout-grid strong,
+.system-grid strong {
   font: 21px 'Share Tech Mono', monospace;
+}
+
+.system-grid strong {
+  font-size: 17px;
 }
 
 .green {

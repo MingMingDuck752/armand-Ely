@@ -5,20 +5,25 @@ const keys = new Set();
 const pointer = { x: canvas.width / 2, y: canvas.height / 2 };
 const fireTarget = { x: canvas.width / 2, y: canvas.height / 2, active: false };
 const missiles = [];
+const burstState = { active: false, shotsLeft: 0, timer: 0 };
+const WORLD_WIDTH = 2200;
+const WORLD_HEIGHT = 1400;
+const camera = { x: 0, y: 0 };
 const headingReadout = document.querySelector('#headingReadout');
 const speedReadout = document.querySelector('#speedReadout');
+const driftReadout = document.querySelector('#driftReadout');
 const reactorBar = document.querySelector('#reactorBar');
 const reactorValue = document.querySelector('#reactorValue');
-const stars = Array.from({ length: 320 }, (_, index) => ({
-  x: (index * 193) % canvas.width,
-  y: (index * 83) % canvas.height,
+const stars = Array.from({ length: 520 }, (_, index) => ({
+  x: (index * 191) % WORLD_WIDTH,
+  y: (index * 97) % WORLD_HEIGHT,
   size: index % 17 === 0 ? 2 : index % 4 === 0 ? 1.5 : 1,
   glow: index % 7 === 0,
   layer: index % 3,
 }));
 const ship = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
+  x: WORLD_WIDTH / 2,
+  y: WORLD_HEIGHT / 2,
   angle: -Math.PI / 2,
   speed: 0,
   strafe: 0,
@@ -29,8 +34,40 @@ let lastFrame = performance.now();
 let elapsed = 0;
 let fireCooldown = 0;
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const normalizeAngle = (angle) => (angle + Math.PI * 2) % (Math.PI * 2);
 const pressed = (...names) => names.some((name) => keys.has(name));
+
+function getCurrentSector() {
+  if (ship.x < WORLD_WIDTH * 0.36) return 'DEBRIS RING';
+  if (ship.x < WORLD_WIDTH * 0.72) return 'ION CHANNEL';
+  return 'VOID GATE';
+}
+
+function updateCamera() {
+  camera.x = clamp(ship.x - canvas.width / 2, 0, WORLD_WIDTH - canvas.width);
+  camera.y = clamp(ship.y - canvas.height / 2, 0, WORLD_HEIGHT - canvas.height);
+}
+
+function fireMissileAtTarget() {
+  fireTarget.x = pointer.x + camera.x;
+  fireTarget.y = pointer.y + camera.y;
+  fireTarget.active = true;
+
+  const dx = fireTarget.x - ship.x;
+  const dy = fireTarget.y - ship.y;
+  const angle = Math.atan2(dy, dx);
+  const speed = 520;
+
+  missiles.push({
+    x: ship.x,
+    y: ship.y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    radius: 4,
+  });
+}
+
 canvas.addEventListener('mousemove', (event) => {
   const rect = canvas.getBoundingClientRect();
   pointer.x = ((event.clientX - rect.left) / rect.width) * canvas.width;
@@ -40,36 +77,38 @@ canvas.addEventListener('mousedown', (event) => {
   if (event.button !== 0) return;
   if (fireCooldown > 0) return;
 
-  fireTarget.x = pointer.x;
-  fireTarget.y = pointer.y;
-  fireTarget.active = true;
-
-  const dx = fireTarget.x - ship.x;
-  const dy = fireTarget.y - ship.y;
-  const distance = Math.hypot(dx, dy) || 1;
-  const baseAngle = Math.atan2(dy, dx);
-
-  for (let index = 0; index < 4; index += 1) {
-    const spreadOffset = (index - 1.5) * 0.22;
-    const angle = baseAngle + spreadOffset;
-    const speed = 520;
-
-    missiles.push({
-      x: ship.x,
-      y: ship.y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      radius: 4,
-    });
-  }
-
   fireCooldown = 3;
+  burstState.active = true;
+  burstState.shotsLeft = 4;
+  burstState.timer = 0;
+
+  fireMissileAtTarget();
+  burstState.shotsLeft -= 1;
+  burstState.timer = 0.12;
+
+  if (burstState.shotsLeft <= 0) {
+    burstState.active = false;
+  }
 });
 window.addEventListener('keydown', (event) => { keys.add(event.key.toLowerCase()); if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(event.key.toLowerCase())) event.preventDefault(); });
 window.addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 
 function update(delta) {
   fireCooldown = Math.max(0, fireCooldown - delta);
+
+  if (burstState.active) {
+    burstState.timer = Math.max(0, burstState.timer - delta);
+
+    if (burstState.timer === 0 && burstState.shotsLeft > 0) {
+      fireMissileAtTarget();
+      burstState.shotsLeft -= 1;
+      burstState.timer = 0.12;
+
+      if (burstState.shotsLeft <= 0) {
+        burstState.active = false;
+      }
+    }
+  }
 
   const thrust = pressed('w', 'arrowup');
   const reverse = pressed('s', 'arrowdown');
@@ -79,64 +118,101 @@ function update(delta) {
   ship.speed = thrust ? 150 : reverse ? -38 : 0;
   ship.x += Math.cos(ship.angle) * ship.speed * delta;
   ship.y += Math.sin(ship.angle) * ship.speed * delta;
-  ship.x = (ship.x + canvas.width) % canvas.width; ship.y = (ship.y + canvas.height) % canvas.height;
+  ship.x = clamp(ship.x, 40, WORLD_WIDTH - 40);
+  ship.y = clamp(ship.y, 40, WORLD_HEIGHT - 40);
 
   for (let index = missiles.length - 1; index >= 0; index -= 1) {
     const missile = missiles[index];
     missile.x += missile.vx * delta;
     missile.y += missile.vy * delta;
 
-    if (missile.x < -30 || missile.x > canvas.width + 30 || missile.y < -30 || missile.y > canvas.height + 30) {
+    if (missile.x < -30 || missile.x > WORLD_WIDTH + 30 || missile.y < -30 || missile.y > WORLD_HEIGHT + 30) {
       missiles.splice(index, 1);
     }
   }
+
+  updateCamera();
 }
 
 function drawBackground() {
-  context.fillStyle = '#030a12';
+  const sector = getCurrentSector();
+  const palette = sector === 'DEBRIS RING'
+    ? { base: '#030a12', glowA: 'rgba(20, 87, 112, .34)', glowB: 'rgba(52, 43, 92, .18)', accent: '184, 220, 235', accentAlt: '218, 227, 201' }
+    : sector === 'ION CHANNEL'
+      ? { base: '#081319', glowA: 'rgba(31, 103, 147, .32)', glowB: 'rgba(91, 66, 142, .24)', accent: '152, 209, 255', accentAlt: '203, 165, 255' }
+      : { base: '#110b12', glowA: 'rgba(142, 78, 124, .26)', glowB: 'rgba(74, 112, 153, .22)', accent: '255, 184, 198', accentAlt: '156, 203, 255' };
+
+  context.fillStyle = palette.base;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const blueCloud = context.createRadialGradient(180, 410, 10, 180, 410, 390);
-  blueCloud.addColorStop(0, 'rgba(20, 87, 112, .34)');
+
+  const blueCloud = context.createRadialGradient(180 - camera.x * 0.08, 410 - camera.y * 0.08, 10, 180 - camera.x * 0.08, 410 - camera.y * 0.08, 390);
+  blueCloud.addColorStop(0, palette.glowA);
   blueCloud.addColorStop(1, 'rgba(3, 10, 18, 0)');
   context.fillStyle = blueCloud;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const violetCloud = context.createRadialGradient(850, 90, 5, 850, 90, 270);
-  violetCloud.addColorStop(0, 'rgba(52, 43, 92, .18)');
+
+  const violetCloud = context.createRadialGradient(850 - camera.x * 0.12, 90 - camera.y * 0.12, 5, 850 - camera.x * 0.12, 90 - camera.y * 0.12, 270);
+  violetCloud.addColorStop(0, palette.glowB);
   violetCloud.addColorStop(1, 'rgba(3, 10, 18, 0)');
   context.fillStyle = violetCloud;
   context.fillRect(0, 0, canvas.width, canvas.height);
+
   stars.forEach((star) => {
+    const screenX = star.x - camera.x;
+    const screenY = star.y - camera.y;
+    if (screenX < -20 || screenX > canvas.width + 20 || screenY < -20 || screenY > canvas.height + 20) return;
+
     const flicker = star.glow ? 0.48 + Math.sin(elapsed * 2 + star.x) * 0.28 : 0.45 + star.layer * 0.12;
-    const tint = star.layer === 0 ? '184, 220, 235' : star.layer === 1 ? '218, 227, 201' : '125, 184, 212';
+    const tint = star.layer === 0 ? palette.accent : star.layer === 1 ? palette.accentAlt : '160, 199, 215';
     context.fillStyle = `rgba(${tint}, ${flicker})`;
-    context.fillRect(Math.floor(star.x), Math.floor(star.y), star.size, star.size);
+    context.fillRect(Math.floor(screenX), Math.floor(screenY), star.size, star.size);
   });
+
+  context.strokeStyle = 'rgba(127, 200, 190, .18)';
+  context.lineWidth = 1;
+  context.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+
   if (Math.abs(ship.speed) > 0) {
     context.strokeStyle = 'rgba(124, 198, 216, .16)';
     context.lineWidth = 1;
     for (let index = 0; index < 12; index += 1) {
-      const x = (index * 89 + elapsed * ship.speed * 0.25) % canvas.width;
-      const y = (index * 47 + 30) % canvas.height;
+      const x = ((index * 89 + elapsed * ship.speed * 0.25) - camera.x) % (canvas.width + 160);
+      const y = ((index * 47 + 30) - camera.y) % (canvas.height + 80);
       context.beginPath(); context.moveTo(x, y); context.lineTo(x - ship.speed * 0.08, y); context.stroke();
     }
   }
 }
-function drawPlanet() { context.save(); context.translate(795, 460); context.fillStyle = 'rgba(11, 42, 55, .65)'; context.beginPath(); context.arc(0, 0, 100, 0, Math.PI * 2); context.fill(); context.strokeStyle = 'rgba(79, 176, 180, .22)'; context.lineWidth = 3; context.beginPath(); context.ellipse(0, 0, 150, 27, -0.18, 0, Math.PI * 2); context.stroke(); context.fillStyle = '#184252'; context.beginPath(); context.arc(-25, -20, 70, 0, Math.PI * 2); context.fill(); context.fillStyle = 'rgba(117, 209, 193, .14)'; context.fillRect(-45, -35, 35, 9); context.fillRect(15, 18, 50, 7); context.restore(); }
+function drawPlanet() {
+  const planetX = 795 - camera.x;
+  const planetY = 460 - camera.y;
+  context.save();
+  context.translate(planetX, planetY);
+  context.fillStyle = 'rgba(11, 42, 55, .65)';
+  context.beginPath(); context.arc(0, 0, 100, 0, Math.PI * 2); context.fill();
+  context.strokeStyle = 'rgba(79, 176, 180, .22)';
+  context.lineWidth = 3; context.beginPath(); context.ellipse(0, 0, 150, 27, -0.18, 0, Math.PI * 2); context.stroke();
+  context.fillStyle = '#184252'; context.beginPath(); context.arc(-25, -20, 70, 0, Math.PI * 2); context.fill();
+  context.fillStyle = 'rgba(117, 209, 193, .14)'; context.fillRect(-45, -35, 35, 9); context.fillRect(15, 18, 50, 7); context.restore();
+}
 function drawAim() {
+  const shipScreenX = ship.x - camera.x;
+  const shipScreenY = ship.y - camera.y;
   context.save();
   context.strokeStyle = 'rgba(255, 80, 80, 0.96)';
   context.lineWidth = 2;
   context.beginPath();
-  context.moveTo(ship.x, ship.y);
+  context.moveTo(shipScreenX, shipScreenY);
   context.lineTo(pointer.x, pointer.y);
   context.stroke();
 
   if (fireTarget.active) {
+    const targetX = fireTarget.x - camera.x;
+    const targetY = fireTarget.y - camera.y;
     context.beginPath();
-    context.moveTo(fireTarget.x - 7, fireTarget.y);
-    context.lineTo(fireTarget.x + 7, fireTarget.y);
-    context.moveTo(fireTarget.x, fireTarget.y - 7);
-    context.lineTo(fireTarget.x, fireTarget.y + 7);
+    context.moveTo(targetX - 7, targetY);
+    context.lineTo(targetX + 7, targetY);
+    context.moveTo(targetX, targetY - 7);
+    context.lineTo(targetX, targetY + 7);
     context.stroke();
   }
 
@@ -155,23 +231,27 @@ function drawAim() {
 function drawMissiles() {
   context.save();
   missiles.forEach((missile) => {
+    const screenX = missile.x - camera.x;
+    const screenY = missile.y - camera.y;
     context.fillStyle = '#ffbb66';
     context.beginPath();
-    context.arc(missile.x, missile.y, missile.radius, 0, Math.PI * 2);
+    context.arc(screenX, screenY, missile.radius, 0, Math.PI * 2);
     context.fill();
 
     context.strokeStyle = 'rgba(255, 170, 70, 0.7)';
     context.lineWidth = 1;
     context.beginPath();
-    context.moveTo(missile.x, missile.y);
-    context.lineTo(missile.x - missile.vx * 0.03, missile.y - missile.vy * 0.03);
+    context.moveTo(screenX, screenY);
+    context.lineTo(screenX - missile.vx * 0.03, screenY - missile.vy * 0.03);
     context.stroke();
   });
   context.restore();
 }
 function drawShip() {
+  const shipScreenX = ship.x - camera.x;
+  const shipScreenY = ship.y - camera.y;
   context.save();
-  context.translate(ship.x, ship.y);
+  context.translate(shipScreenX, shipScreenY);
   context.rotate(ship.angle);
   context.scale(ship.scale, ship.scale);
   const pixel = (color, x, y, width, height) => { context.fillStyle = color; context.fillRect(x, y, width, height); };
@@ -217,6 +297,23 @@ function drawShip() {
   pixel('#d9e1ca', -42, -13, 4, 4); pixel('#d9e1ca', -42, 9, 4, 4); pixel('#d9e1ca', 45, -11, 4, 4); pixel('#d9e1ca', 45, 7, 4, 4);
   context.restore();
 }
-function render() { drawBackground(); drawPlanet(); drawAim(); drawMissiles(); drawShip(); headingReadout.textContent = `${String(Math.round(normalizeAngle(ship.angle) * 180 / Math.PI)).padStart(3, '0')}°`; speedReadout.textContent = String(Math.round(Math.abs(ship.speed))).padStart(3, '0'); const reactor = Math.round(62 + Math.min(Math.abs(ship.speed) / 4, 30)); reactorBar.style.width = `${reactor}%`; reactorValue.textContent = reactor; }
+function render() {
+  drawBackground();
+  drawPlanet();
+  drawAim();
+  drawMissiles();
+  drawShip();
+
+  const heading = Math.round(normalizeAngle(ship.angle) * 180 / Math.PI);
+  const speed = Math.round(Math.abs(ship.speed));
+  const drift = (Math.abs(ship.speed) / 280 + 0.2).toFixed(1);
+  const reactor = Math.round(62 + Math.min(Math.abs(ship.speed) / 4, 30));
+
+  headingReadout.textContent = `${String(heading).padStart(3, '0')}°`;
+  speedReadout.textContent = String(speed).padStart(3, '0');
+  driftReadout.textContent = drift;
+  reactorBar.style.width = `${reactor}%`;
+  reactorValue.textContent = reactor;
+}
 function frame(now) { const delta = Math.min((now - lastFrame) / 1000, 0.05); lastFrame = now; elapsed += delta; update(delta); render(); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
